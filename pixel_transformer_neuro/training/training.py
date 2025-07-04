@@ -35,6 +35,11 @@ def run_training(
     stimulus_indices = np.arange(num_stimuli)
     kf = KFold(n_splits=num_folds, shuffle=True, random_state=42)
 
+    # For combined test logging
+    combined_test_preds = []
+    combined_test_labels = []
+    combined_test_neurons = []
+
     for fold_idx, (train_stim_idxs, test_stim_idxs) in enumerate(kf.split(stimulus_indices)):
         wandb.run.name = f"{wandb_config['name']}_fold{fold_idx}"
         print(f"\n🔁 Fold {fold_idx + 1}/{num_folds}")
@@ -86,7 +91,6 @@ def run_training(
                 all_preds.append(output.detach().cpu().numpy())
                 all_labels.append(target.cpu().numpy())
 
-            # Compute average log-likelihood for train set
             pred_probs_train = np.concatenate(all_preds)
             true_labels_train = np.concatenate(all_labels)
             avg_ll = -log_loss(true_labels_train, pred_probs_train, labels=[0, 1])
@@ -112,6 +116,24 @@ def run_training(
             true_labels = np.concatenate(all_labels)
             neuron_ids = np.concatenate(all_neurons)
 
-            log_diagnostics_to_wandb(pred_probs, true_labels, neuron_ids, phase=f"fold{fold_idx}/{phase}")
+            if phase == "test":
+                combined_test_preds.append(pred_probs)
+                combined_test_labels.append(true_labels)
+                combined_test_neurons.append(neuron_ids)
+            else:
+                log_diagnostics_to_wandb(pred_probs, true_labels, neuron_ids, phase=f"fold{fold_idx}/{phase}")
+
+    # === Log combined test metrics across folds ===
+    if combined_test_preds:
+        all_test_preds = np.concatenate(combined_test_preds)
+        all_test_labels = np.concatenate(combined_test_labels)
+        all_test_neurons = np.concatenate(combined_test_neurons)
+
+        log_diagnostics_to_wandb(
+            all_test_preds,
+            all_test_labels,
+            all_test_neurons,
+            phase="test_combined"
+        )
 
     wandb.finish()
