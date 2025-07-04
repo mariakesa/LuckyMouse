@@ -5,7 +5,7 @@ import numpy as np
 import wandb
 
 from data.dataset import NeuronVisionDataset
-from evaluation.wandb_helpers import log_diagnostics_to_wandb
+from pixel_transformer_neuro.evaluation.wandb_helpers import log_diagnostics_to_wandb
 
 def run_training(
     model_class,
