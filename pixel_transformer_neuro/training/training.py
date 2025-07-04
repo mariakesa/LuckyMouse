@@ -5,7 +5,8 @@ import numpy as np
 import wandb
 
 from data.dataset import NeuronVisionDataset
-from pixel_transformer_neuro.evaluation.wandb_helpers import log_diagnostics_to_wandb
+from evaluation.wandb_helpers import log_diagnostics_to_wandb
+from sklearn.metrics import log_loss
 
 def run_training(
     model_class,
@@ -69,7 +70,7 @@ def run_training(
 
         for epoch in range(num_epochs):
             model.train()
-            total_loss = 0.0
+            all_preds, all_labels = [], []
             for batch in train_loader:
                 optimizer.zero_grad()
 
@@ -82,10 +83,14 @@ def run_training(
                 loss.backward()
                 optimizer.step()
 
-                total_loss += loss.item() * len(target)
+                all_preds.append(output.detach().cpu().numpy())
+                all_labels.append(target.cpu().numpy())
 
-            avg_train_loss = total_loss / len(train_loader.dataset)
-            wandb.log({f"fold{fold_idx}/train/loss": avg_train_loss, "epoch": epoch})
+            # Compute average log-likelihood for train set
+            pred_probs_train = np.concatenate(all_preds)
+            true_labels_train = np.concatenate(all_labels)
+            avg_ll = -log_loss(true_labels_train, pred_probs_train, labels=[0, 1])
+            wandb.log({f"fold{fold_idx}/train/avg_log_likelihood": avg_ll, "epoch": epoch})
 
         # === EVALUATION ===
         model.eval()

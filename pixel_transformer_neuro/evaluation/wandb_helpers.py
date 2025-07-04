@@ -12,7 +12,7 @@ from sklearn.metrics import (
 def log_diagnostics_to_wandb(pred_probs, true_labels, neuron_ids=None, phase="train"):
     """
     Logs diagnostic metrics and plots to Wandb.
-    
+
     Args:
         pred_probs (np.ndarray): shape (N,), predicted probabilities
         true_labels (np.ndarray): shape (N,), binary ground-truth labels
@@ -23,15 +23,15 @@ def log_diagnostics_to_wandb(pred_probs, true_labels, neuron_ids=None, phase="tr
     pred_probs = np.asarray(pred_probs)
     true_labels = np.asarray(true_labels)
 
-    # Log-likelihood = -log_loss
-    total_log_likelihood = -log_loss(true_labels, pred_probs, labels=[0,1])
-    wandb.log({f"{phase}/log_likelihood": total_log_likelihood})
+    # Average Log-likelihood (comparable across train/test)
+    avg_log_likelihood = -log_loss(true_labels, pred_probs, labels=[0, 1])
+    wandb.log({f"{phase}/avg_log_likelihood": avg_log_likelihood})
 
-    # Event-only log-likelihood
+    # Event-only average log-likelihood
     spike_mask = true_labels == 1
     if spike_mask.sum() > 0:
-        event_log_likelihood = -log_loss(true_labels[spike_mask], pred_probs[spike_mask], labels=[0,1])
-        wandb.log({f"{phase}/event_log_likelihood": event_log_likelihood})
+        avg_event_log_likelihood = -log_loss(true_labels[spike_mask], pred_probs[spike_mask], labels=[0, 1])
+        wandb.log({f"{phase}/avg_event_log_likelihood": avg_event_log_likelihood})
 
     # Confusion Matrix
     preds_binary = (pred_probs >= 0.5).astype(int)
@@ -74,7 +74,7 @@ def log_diagnostics_to_wandb(pred_probs, true_labels, neuron_ids=None, phase="tr
             mask = neuron_ids == n
             if np.any(mask & spike_mask):
                 try:
-                    ll = -log_loss(true_labels[mask & spike_mask], pred_probs[mask & spike_mask], labels=[0,1])
+                    ll = -log_loss(true_labels[mask & spike_mask], pred_probs[mask & spike_mask], labels=[0, 1])
                     per_neuron_ll.append(ll)
                 except:
                     per_neuron_ll.append(np.nan)
@@ -82,7 +82,7 @@ def log_diagnostics_to_wandb(pred_probs, true_labels, neuron_ids=None, phase="tr
                 per_neuron_ll.append(np.nan)
 
         mean_ll = np.nanmean(per_neuron_ll)
-        wandb.log({f"{phase}/event_log_likelihood_mean_per_neuron": mean_ll})
+        wandb.log({f"{phase}/avg_event_log_likelihood_per_neuron": mean_ll})
 
         # Optional: heatmap
         fig, ax = plt.subplots(figsize=(12, 1))
