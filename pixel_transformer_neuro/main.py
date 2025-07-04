@@ -11,9 +11,13 @@ wandb_api_key = os.getenv("WANDB_API_KEY")
 os.environ["WANDB_API_KEY"] = wandb_api_key 
 
 if __name__ == "__main__":
+    import wandb
+    wandb.login() 
+    #import multiprocessing as mp
+    #mp.set_start_method("spawn", force=True)
     dataset_path_dict = {
         "embeddings": "/home/maria/LuckyMouse/pixel_transformer_neuro/data/processed/google_vit-base-patch16-224_embeddings_softmax.pkl",
-        "neural": "/home/maria/LuckyMouse/pixel_transformer_neuro/data/processed/hybrid_neural_responses.npy"
+        "neural": "/home/maria/LuckyMouse/pixel_transformer_neuro/data/processed/hybrid_neural_responses_reduced.npy"
     }
 
     wandb_config = {
@@ -29,6 +33,6 @@ if __name__ == "__main__":
         dataset_path_dict=dataset_path_dict,
         wandb_config=wandb_config,
         num_epochs=20,
-        batch_size=128,
+        batch_size=12800*4,
         learning_rate=1e-3
     )

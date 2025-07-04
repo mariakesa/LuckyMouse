@@ -16,7 +16,7 @@ class NeuronVisionDataset(Dataset):
         self.neural_events = np.load(neural_data_path, mmap_mode='r')  # (N_neurons, 5900)
 
         self.num_stimuli = 118
-        self.trials_per_stimulus = 50
+        self.trials_per_stimulus = 1
         self.num_trials = self.num_stimuli * self.trials_per_stimulus
         self.num_neurons = self.neural_events.shape[0]
 
